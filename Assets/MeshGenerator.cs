@@ -10,93 +10,73 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter))]
 public class MeshGenerator : MonoBehaviour
 {
-    static readonly string textFile = "C:/Users/Mich Ał/Desktop/Magisterka_DZ/ASCII/points.txt";
+    static readonly string textFile = "C:/Users/Mich Ał/Desktop/Magisterka_DZ/ASCII/pkt.txt";
     Mesh mesh;
-    Vector3[] vertices;
-    int[] triangles;
-
-    private float[] heights = new float[5621952];
-
-    public int xSize = 1974;
-    public int zSize = 2848;
-
+    List<Vector3> vertices = new List<Vector3>();
     void Start()
     {
         mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         GetComponent<MeshFilter>().mesh = mesh;
-
-        ReadFile();
-        CreateShape();
+        this.vertices = ReadFile();
         UpdateMesh();
     }
 
     void UpdateMesh()
     {
         mesh.Clear();
-        mesh.vertices = vertices;
-        mesh.triangles = triangles;
+        mesh.vertices = vertices.ToArray();
         mesh.RecalculateNormals();
     }
 
 
-    void CreateShape()
+    int[] CreateShape()
     {
-        vertices = new Vector3[(xSize + 1) * (zSize + 1)];
-        
-
-        for (int index = 0, z = 0; z <= zSize; z++)
-        {
-            for (int x = 0; x <= xSize; x++)
-            {
-                //adding perlin noise as height
-                float y = Mathf.PerlinNoise(x * .3f, z * .3f) * 2f;
-                vertices[index] = new Vector3(x, heights[index], z);
-                index++;
-            }
-        }
-
-        triangles = new int[xSize * zSize * 6];
-
+        var triangles = new int[vertices.Count];
         int currentVertex = 0;
         int currentTriangle = 0;
-
-        for (int z = 0; z < zSize; z++)
+        var xSize = vertices.FindAll(v => v.z == 146223).Count;
+        for (int z = 0; z < vertices.Count; z++)
         {
-            for (int x = 0; x < xSize; x++)
-            {
-                triangles[currentTriangle + 0] = currentVertex + 0;
-                triangles[currentTriangle + 1] = currentVertex + xSize + 1;
-                triangles[currentTriangle + 2] = currentVertex + 1;
-                triangles[currentTriangle + 3] = currentVertex + 1;
-                triangles[currentTriangle + 4] = currentVertex + xSize + 1;
-                triangles[currentTriangle + 5] = currentVertex + xSize + 2;
-                currentVertex++;
-                currentTriangle += 6;
-            }
-
+            triangles[currentTriangle + 0] = currentVertex + 0;
+            triangles[currentTriangle + 1] = currentVertex + xSize + 1;
+            triangles[currentTriangle + 2] = currentVertex + 1;
+            triangles[currentTriangle + 3] = currentVertex + 1;
+            triangles[currentTriangle + 4] = currentVertex + xSize + 1;
+            triangles[currentTriangle + 5] = currentVertex + xSize + 2;
             currentVertex++;
+            currentTriangle += 6;
         }
+        return triangles;
     }
 
-    private void ReadFile()
+    private List<Vector3> ReadFile()
     {
         var reader = new StreamReader(textFile);
-        var lines = reader.ReadLine();
+        var lines = new List<String>();
         while (!reader.EndOfStream)
         {
-            var values = lines.Split(',');
-            for (int i = 0; i < heights.Length; i++)
-            {
-                heights[i] = float.Parse(values[2], CultureInfo.InvariantCulture.NumberFormat);
-                System.Console.WriteLine(heights[]);
-            }
-
+            lines.Add(reader.ReadLine());
         }
         reader.Close();
 
+        var vertices = new List<Vector3>();
+        foreach (var item in lines)
+        {
+            var vals = item.Split(',');
+            vertices.Add(new Vector3(
+                float.Parse(vals[0], CultureInfo.InvariantCulture.NumberFormat),
+                float.Parse(vals[2], CultureInfo.InvariantCulture.NumberFormat),
+                float.Parse(vals[1], CultureInfo.InvariantCulture.NumberFormat)
+            ));
+        }
+        return vertices;
     }
-
-   
-
+    
+    private void OnDrawGizmos() {
+        foreach (var item in vertices)
+        {
+            Gizmos.DrawSphere(item, .03f);
+        }
+    }
 }
