@@ -13,44 +13,54 @@ public class MeshGenerator : MonoBehaviour
     static readonly string textFile = "C:/Users/Mich Ał/Desktop/Magisterka_DZ/ASCII/pkt.txt";
     Mesh mesh;
     List<Vector3> vertices = new List<Vector3>();
+
     void Start()
     {
         mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         GetComponent<MeshFilter>().mesh = mesh;
-        this.vertices = ReadFile();
+        ReadPointsFromFile();
         UpdateMesh();
     }
 
     void UpdateMesh()
     {
         mesh.Clear();
-        mesh.vertices = vertices.ToArray();
+        mesh.vertices = vertices.OrderByDescending(v => v.x).ToArray();
+        mesh.triangles = getTriangles();
         mesh.RecalculateNormals();
     }
 
 
-    int[] CreateShape()
+    int[] getTriangles()
     {
-        var triangles = new int[vertices.Count];
-        int currentVertex = 0;
-        int currentTriangle = 0;
-        var xSize = vertices.FindAll(v => v.z == 146223).Count;
-        for (int z = 0; z < vertices.Count; z++)
+        
+        int vert = 0;
+        int tris = 0;
+        var xSize = (int)((vertices.Max(v => v.x)) - (vertices.Min(v => v.x)));
+        var zSize = (int)((vertices.Max(v => v.z)) - (vertices.Min(v => v.z)));
+        var triangles = new int[xSize * zSize * 6];
+      
+
+        for (int z = 0; z < zSize; z++)
         {
-            triangles[currentTriangle + 0] = currentVertex + 0;
-            triangles[currentTriangle + 1] = currentVertex + xSize + 1;
-            triangles[currentTriangle + 2] = currentVertex + 1;
-            triangles[currentTriangle + 3] = currentVertex + 1;
-            triangles[currentTriangle + 4] = currentVertex + xSize + 1;
-            triangles[currentTriangle + 5] = currentVertex + xSize + 2;
-            currentVertex++;
-            currentTriangle += 6;
+            for (int x = 0; x < xSize; x++)
+            {
+                triangles[tris + 0] = vert + 0;
+                triangles[tris + 1] = vert + xSize + 1;
+                triangles[tris + 2] = vert + 1;
+                triangles[tris + 3] = vert + 1;
+                triangles[tris + 4] = vert + xSize + 1;
+                triangles[tris + 5] = vert + xSize + 2;
+                vert++;
+                tris += 6;
+            }
+        vert++;
         }
         return triangles;
     }
 
-    private List<Vector3> ReadFile()
+    private void ReadPointsFromFile()
     {
         var reader = new StreamReader(textFile);
         var lines = new List<String>();
@@ -60,23 +70,24 @@ public class MeshGenerator : MonoBehaviour
         }
         reader.Close();
 
-        var vertices = new List<Vector3>();
-        foreach (var item in lines)
+        foreach (var line in lines)
         {
-            var vals = item.Split(',');
+            var values = line.Split(',');
             vertices.Add(new Vector3(
-                float.Parse(vals[0], CultureInfo.InvariantCulture.NumberFormat),
-                float.Parse(vals[2], CultureInfo.InvariantCulture.NumberFormat),
-                float.Parse(vals[1], CultureInfo.InvariantCulture.NumberFormat)
+                float.Parse(values[0], CultureInfo.InvariantCulture.NumberFormat),
+                float.Parse(values[2], CultureInfo.InvariantCulture.NumberFormat),
+                float.Parse(values[1], CultureInfo.InvariantCulture.NumberFormat)
             ));
         }
-        return vertices;
     }
-    
-    private void OnDrawGizmos() {
+    private void OnDrawGizmos()
+    {
         foreach (var item in vertices)
         {
-            Gizmos.DrawSphere(item, .03f);
+            Gizmos.DrawSphere(item, .1f);
         }
     }
+
+
+
 }
